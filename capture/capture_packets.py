@@ -19,7 +19,7 @@ def packet_callback(packet):
     try: 
         # Append packet to the captured packets list 
         captured_packets.append(packet)
-        print(packet.summary())
+        #print(packet.summary())
     
     except Exception as e:
         print(f"Error processing packet: {e}")
