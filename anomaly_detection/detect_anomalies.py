@@ -35,8 +35,11 @@ def detect_anomaly(captured_packets):
     dataset = np.array(dataset)
 
     # Initialize and fit the anomaly detection model
-    model = IForest()  
+    model = IForest(contamination=0.01)  
     model.fit(dataset)
+
+    # Calculate anomaly scores
+    anomaly_scores = model.decision_function(dataset)
 
     # Detect anomalies in the dataset
     anomalies = model.predict(dataset)
@@ -44,6 +47,7 @@ def detect_anomaly(captured_packets):
     # Generate report 
     generate_report(captured_packets, anomalies)
 
+    return anomaly_scores
 
 
 def generate_report(captured_packets, anomalies):
