@@ -2,9 +2,6 @@ from scapy.all import sniff
 from datetime import datetime
 from scapy.layers.inet import  TCP
 
-
-#from capture.traffic_report import generate_report
-
 # Empty captured packets list
 captured_packets = []
 
@@ -12,6 +9,7 @@ captured_packets = []
 def capture_packets(interface, num_packets):
     # Start packet capturing and call the packet_callback for each captured packet
     sniff(iface=interface, count=num_packets, prn=packet_callback)
+    return captured_packets
 
 # Packet processing callback function
 def packet_callback(packet):
@@ -23,6 +21,7 @@ def packet_callback(packet):
     
     except Exception as e:
         print(f"Error processing packet: {e}")
+
 
 
 
