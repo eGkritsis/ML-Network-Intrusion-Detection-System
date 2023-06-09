@@ -20,14 +20,14 @@ if __name__ == '__main__':
     # Start capturing packets
     #captured_packets = capture_packets(interface, num_packets)
 
-    # Start capturing flows
-    captured_flows = capture_flows(interface, num_packets)
-    
     # Detect anomalies and generate report
     #anomaly_scores = detect_anomaly(captured_packets)
 
     # Produce a plot about anomaly scores
     #plot_anomaly_score(anomaly_scores)
+
+    # Start capturing flows
+    captured_flows = capture_flows(interface, num_packets)
 
     # Model file
     model_file = r'\Network-Traffic-Analyzer\model.pkl'

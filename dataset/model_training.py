@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import joblib
 
 
@@ -26,12 +26,11 @@ print(train_set.columns)
 
 # Fit label encoder on training set and transform both training and test sets
 label_encoder = LabelEncoder()
-categorical_features = ['proto', 'service', 'state', 'attack_cat']
+categorical_features = ['proto', 'service', 'state']
 
 for feature in categorical_features:
     train_set[feature] = label_encoder.fit_transform(train_set[feature])
     test_set[feature] = label_encoder.transform(test_set[feature])
-
 
 # Retrieve tranformed features and labels
 x_train_encoded = train_set.drop("label", axis=1)
