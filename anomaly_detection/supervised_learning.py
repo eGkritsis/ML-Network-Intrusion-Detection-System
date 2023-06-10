@@ -1,7 +1,7 @@
 import pandas as pd
 import joblib
 from datetime import datetime
-from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
+from sklearn.preprocessing import OneHotEncoder, LabelBinarizer, LabelEncoder
 import numpy as np
 from sklearn.impute import SimpleImputer
 
@@ -61,9 +61,7 @@ def extract_flow_info(flow, id):
     flow_info['ct_flw_http_mthd'] = len([packet for packet in flow['packets'] if 'http' in packet])
     flow_info['ct_src_ltm'] = calculate_ct_src_ltm(flow, flow_extra_info['source_ip'])
     flow_info['ct_srv_dst'] = len(set(packet.tcp.dstport for packet in flow['packets'] if 'tcp' in packet))
-    flow_info['is_sm_ips_ports'] = (flow_extra_info['source_ip'] == flow_extra_info['destination_ip'] and flow_extra_info['source_port'] == flow_extra_info['destination_port'])
-
-    # Set the attack category and label as 'N/A' initially
+    flow_info['is_sm_ips_ports'] = 1 if (flow_extra_info['source_ip'] == flow_extra_info['destination_ip'] and flow_extra_info['source_port'] == flow_extra_info['destination_port']) else 0
     flow_info['attack_cat'] = 0.0
 
     # Convert selected features to appropriate data types
@@ -71,8 +69,7 @@ def extract_flow_info(flow, id):
     flow_info['spkts'] = int(flow_info['spkts'])
     flow_info['dpkts'] = int(flow_info['dpkts'])
     flow_info['sbytes'] = int(flow_info['sbytes'])
-    #flow_info['dbytes'] = int(flow_info['dbytes'])
-    flow_info['dbytes'] = 0
+    flow_info['dbytes'] = int(flow_info['dbytes'])
     flow_info['rate'] = float(flow_info['rate'])
     flow_info['sttl'] = int(flow_info['sttl'])
     flow_info['dttl'] = int(flow_info['dttl'])
@@ -107,7 +104,7 @@ def extract_flow_info(flow, id):
     flow_info['ct_flw_http_mthd'] = int(flow_info['ct_flw_http_mthd'])
     flow_info['ct_src_ltm'] = int(flow_info['ct_src_ltm'])
     flow_info['ct_srv_dst'] = int(flow_info['ct_srv_dst'])
-
+    
     
     # One-hot encoding for categorical features
     protocol_encoder = LabelBinarizer()
@@ -121,7 +118,6 @@ def extract_flow_info(flow, id):
     state_encoder = LabelBinarizer()
     state_encoded = state_encoder.fit_transform([flow_info['state']])
     flow_info['state'] = np.array(state_encoded[0])
-    
 
     return flow_info
 
@@ -147,8 +143,7 @@ def flow_detection(captured_flows, model):
     
     # Check if the DataFrame has zero samples
     if flow_info_df.shape[0] == 0:
-        # Handle the case when there are no valid samples
-        # For example, return None or an empty list
+        # No valid samples
         return None
 
     # Use the model to predict labels for the preprocessed flows
@@ -168,7 +163,6 @@ def load_model(model_file):
     model = joblib.load('model.pkl')
     return model
 
-    
 def generate_report(predicted_labels):
     # Implement the function to generate a report based on the predicted labels
     # Summarize the detection results, such as the number of normal flows, malicious flows, etc.
@@ -251,6 +245,7 @@ def calculate_dbytes(flow):
         if 'ip' in packet:
             if packet.ip.dst == flow['source_ip']:
                 dbytes += int(packet.ip.len)
+    return dbytes
 
 
 def calculate_sstl(flow):
