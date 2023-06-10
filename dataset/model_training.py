@@ -22,11 +22,9 @@ y_train = train_set["label"] # Target variable for training the data
 x_test = test_set.drop("label", axis=1) 
 y_test = test_set["label"]
 
-print(train_set.columns)
-
 # Fit label encoder on training set and transform both training and test sets
 label_encoder = LabelEncoder()
-categorical_features = ['proto', 'service', 'state']
+categorical_features = ['proto', 'service', 'state', 'attack_cat']
 
 for feature in categorical_features:
     train_set[feature] = label_encoder.fit_transform(train_set[feature])
@@ -51,7 +49,4 @@ predictions = rf.predict(x_test_encoded)
 # Evaluate the model
 report = classification_report(y_test_encoded, predictions)
 print(report)
-
-# Save the trained model as a .pkl file
-#joblib.dump(rf, 'model.pkl')
 
