@@ -44,18 +44,8 @@ y_train = train_set["attack_cat"] # Target variable for training the data
 x_test = test_set.drop("attack_cat", axis=1) 
 y_test = test_set["attack_cat"]
 
-# Create the Random Forest classifier
-rf = RandomForestClassifier(RandomForestClassifier(
-    n_estimators=500,  # Increase the number of trees
-    criterion='gini',  # Use Gini impurity as the criterion
-    max_depth=None,  # Allow trees to grow without maximum depth
-    min_samples_split=2,  # Require at least 2 samples to split a node
-    min_samples_leaf=1,  # Require at least 1 sample at a leaf node
-    max_features='auto',  # Use 'auto' to consider all features for the best split
-    bootstrap=True,  # Use bootstrap samples for training
-    random_state=42  # Set a random seed for reproducibility
-)
-)
+# Train the Random Forest model
+rf = RandomForestClassifier()
 
 rf.fit(x_train, y_train)
 
