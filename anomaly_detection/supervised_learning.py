@@ -166,14 +166,41 @@ def generate_report_label(predicted_labels):
 
     print()
     print("Flow Report:")
-    print("-------------")
+    print("-------------------------")
     for i, label in enumerate(predicted_labels):
         print(f"Flow {i+1}: {'Malicious' if label == 1 else 'Normal'}")
-        print("-------------")
+        print("-------------------------")
     print()
     print(f"Number of normal flows: {normal_count}")
     print(f"Number of malicious flows: {malicious_count}")
     print("Generate report complete.")
+
+def generate_report_attack_cat(predicted_attack_categories):
+    if predicted_attack_categories is not None:
+        print("Flow Report:")
+        print("-----------------------")
+
+        attack_cat_counts = {}
+
+        for i, attack_cat in enumerate(predicted_attack_categories):
+            if attack_cat in attack_cat_counts:
+                attack_cat_counts[attack_cat] += 1
+            else:
+                attack_cat_counts[attack_cat] = 1
+
+            print(f"Flow {i+1}:")
+            print(f" Attack Category: {attack_cat}")
+            print("------------------------")
+
+        print("------------------------")
+
+        for attack_cat, count in attack_cat_counts.items():
+            print(f"Number of {attack_cat} flows: {count}")
+
+        print("Generate report complete.")
+    else:
+        print("No samples")
+
 
 
 def generate_report_label_attack_cat(predicted_labels):
@@ -193,7 +220,10 @@ def generate_report_label_attack_cat(predicted_labels):
         }
 
         print("Flow Report:")
-        print("-----------")
+        print("-----------------------")
+
+        normal_count = 0
+        malicious_count = 0
 
         for i, labels in enumerate(predicted_labels):
             label = labels[0]
@@ -201,11 +231,16 @@ def generate_report_label_attack_cat(predicted_labels):
             print(f"Flow {i+1}:")
             print(f" Label: {label}")
             print(f" Attack Category: {attack_categories[attack_cat]}")
-            print("------------")
+            print("------------------------")
 
-        print("------------")
-        normal_count = np.count_nonzero(predicted_labels[:, 0] == 0)
-        malicious_count = np.count_nonzero(predicted_labels[:, 0] == 1)
+            if label == 0:
+                normal_count += 1
+            elif label == 1 and attack_cat == 6:
+                normal_count += 1
+            elif label == 1 and attack_cat != 6:
+                malicious_count += 1
+
+        print("------------------------")
 
         print(f"Number of normal flows: {normal_count}")
         print(f"Number of malicious flows: {malicious_count}")
