@@ -58,7 +58,7 @@ report = classification_report(y_test, predictions)
 print(report)
 
 # Save the trained model as a .pkl file
-joblib.dump(nb, 'naive_label.pkl')
+#joblib.dump(nb, 'naive_label.pkl')
 
 
 '''
