@@ -5,7 +5,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 # Load the dataset and split into features and labels
 dataset = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\UNSW_NB15_training-set.csv')
-X = dataset.drop(['label', 'attack_cat'], axis=1)
+X = dataset.drop(['id', 'label', 'attack_cat'], axis=1)
 y = dataset['label']
 
 # One-hot encode categorical features
