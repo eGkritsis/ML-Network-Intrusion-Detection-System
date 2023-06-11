@@ -48,17 +48,16 @@ x_test = test_set.drop("label", axis=1)
 y_test = test_set["label"]
 
 # Train the Random Forest model
-rf = RandomForestClassifier(RandomForestClassifier(
-    n_estimators=500,  # Increase the number of trees
-    criterion='gini',  # Use Gini impurity as the criterion
-    max_depth=None,  # Allow trees to grow without maximum depth
-    min_samples_split=2,  # Require at least 2 samples to split a node
-    min_samples_leaf=1,  # Require at least 1 sample at a leaf node
-    max_features='auto',  # Use 'auto' to consider all features for the best split
-    bootstrap=True,  # Use bootstrap samples for training
-    random_state=42  # Set a random seed for reproducibility
+rf = RandomForestClassifier(n_estimators=500,  # Increase the number of trees
+                            criterion='gini',  # Use Gini impurity as the criterion
+                            max_depth=None,  # Allow trees to grow without maximum depth
+                            min_samples_split=2,  # Require at least 2 samples to split a node
+                            min_samples_leaf=1,  # Require at least 1 sample at a leaf node
+                            max_features='sqrt',  # Use 'sqrt' for the best split
+                            bootstrap=True,  # Use bootstrap samples for training
+                            random_state=42  # Set a random seed for reproducibility
 )
-)
+
 rf.fit(x_train, y_train)
 
 # Make predictions on the test set
@@ -67,7 +66,6 @@ predictions = rf.predict(x_test)
 # Evaluate the model
 report = classification_report(y_test, predictions)
 print(report)
-
 
 # Save the trained model as a .pkl file
 #joblib.dump(rf, 'model_label.pkl')
