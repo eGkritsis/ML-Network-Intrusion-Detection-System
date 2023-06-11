@@ -5,7 +5,7 @@ from sklearn.preprocessing import OneHotEncoder, LabelBinarizer, LabelEncoder
 import numpy as np
 from sklearn.impute import SimpleImputer
 
-    
+
 # Extract and preprocess the necessary information from each flow of packets
 def extract_flow_info(flow, id):
     flow_extra_info = {}
@@ -19,7 +19,7 @@ def extract_flow_info(flow, id):
     # Calculate timestamps
     timestamps = [datetime.timestamp(packet.sniff_time) for packet in flow['packets']]
     
-    flow_info['id'] = id
+    #flow_info['id'] = id
     flow_info['dur'] = calculate_flow_duration(flow)
     flow_info['proto'] = flow['protocol']
     flow_info['service'] = find_service(flow)
@@ -62,8 +62,7 @@ def extract_flow_info(flow, id):
     flow_info['ct_src_ltm'] = calculate_ct_src_ltm(flow, flow_extra_info['source_ip'])
     flow_info['ct_srv_dst'] = len(set(packet.tcp.dstport for packet in flow['packets'] if 'tcp' in packet))
     flow_info['is_sm_ips_ports'] = 1 if (flow_extra_info['source_ip'] == flow_extra_info['destination_ip'] and flow_extra_info['source_port'] == flow_extra_info['destination_port']) else 0
-    flow_info['attack_cat'] = 0.0
-
+    
     # Convert selected features to appropriate data types
     flow_info['dur'] = float(flow_info['dur'])
     flow_info['spkts'] = int(flow_info['spkts'])
@@ -104,20 +103,21 @@ def extract_flow_info(flow, id):
     flow_info['ct_flw_http_mthd'] = int(flow_info['ct_flw_http_mthd'])
     flow_info['ct_src_ltm'] = int(flow_info['ct_src_ltm'])
     flow_info['ct_srv_dst'] = int(flow_info['ct_srv_dst'])
-    
-    
-    # One-hot encoding for categorical features
-    protocol_encoder = LabelBinarizer()
-    protocol_encoded = protocol_encoder.fit_transform([flow_info['proto']])
-    flow_info['proto'] = np.array(protocol_encoded[0])
 
-    service_encoder = LabelBinarizer()
-    service_encoded = service_encoder.fit_transform([flow_info['service']])
-    flow_info['service'] = np.array(service_encoded[0])
+    # Encode categorical features
+    protocol_encoder = LabelEncoder()
+    flow_info['proto'] = protocol_encoder.fit_transform([flow_info['proto']])[0]
 
-    state_encoder = LabelBinarizer()
-    state_encoded = state_encoder.fit_transform([flow_info['state']])
-    flow_info['state'] = np.array(state_encoded[0])
+    service_encoder = LabelEncoder()
+    flow_info['service'] = service_encoder.fit_transform([flow_info['service']])[0]
+
+    state_encoder = LabelEncoder()
+    flow_info['state'] = state_encoder.fit_transform([flow_info['state']])[0]
+
+    print(f"id: {id}")
+    print(flow_extra_info)
+    print(flow_info)
+    print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
     return flow_info
 
@@ -140,7 +140,6 @@ def flow_detection(captured_flows, model):
     flow_info_df = pd.DataFrame(flow_info)
     flow_info_df = imputer.fit_transform(flow_info_df)
     
-    
     # Check if the DataFrame has zero samples
     if flow_info_df.shape[0] == 0:
         # No valid samples
@@ -153,25 +152,67 @@ def flow_detection(captured_flows, model):
 
 def detect_anomaly(info, model):
     predicted_labels = model.predict(info)
-
     return predicted_labels
 
 # Load the trained Random Forest model
 def load_model(model_file):
-    # Implement the function to load the trained Random Forest model from the saved file
-    # Return the loaded model
-    model = joblib.load('model.pkl')
+    model = joblib.load(model_file)
     return model
 
-def generate_report(predicted_labels):
-    # Implement the function to generate a report based on the predicted labels
-    # Summarize the detection results, such as the number of normal flows, malicious flows, etc.
-    # Print or save the report as per your requirements
+def generate_report_label(predicted_labels):
+    # Generate report based on the predicted labels
     normal_count = np.count_nonzero(predicted_labels == 0)
     malicious_count = np.count_nonzero(predicted_labels == 1)
+
+    print()
+    print("Flow Report:")
+    print("-------------")
+    for i, label in enumerate(predicted_labels):
+        print(f"Flow {i+1}: {'Malicious' if label == 1 else 'Normal'}")
+        print("-------------")
+    print()
     print(f"Number of normal flows: {normal_count}")
     print(f"Number of malicious flows: {malicious_count}")
     print("Generate report complete.")
+
+
+def generate_report_label_attack_cat(predicted_labels):
+    if predicted_labels is not None:
+
+        attack_categories = {
+            0: "Analysis",
+            1: "Backdoor",
+            2: "DoS",
+            3: "Exploits",
+            4: "Fuzzers",
+            5: "Generic",
+            6: "Normal",
+            7: "Reconnaissance",
+            8: "Shellcode",
+            9: "Worms"
+        }
+
+        print("Flow Report:")
+        print("-----------")
+
+        for i, labels in enumerate(predicted_labels):
+            label = labels[0]
+            attack_cat = labels[1]
+            print(f"Flow {i+1}:")
+            print(f" Label: {label}")
+            print(f" Attack Category: {attack_categories[attack_cat]}")
+            print("------------")
+
+        print("------------")
+        normal_count = np.count_nonzero(predicted_labels[:, 0] == 0)
+        malicious_count = np.count_nonzero(predicted_labels[:, 0] == 1)
+
+        print(f"Number of normal flows: {normal_count}")
+        print(f"Number of malicious flows: {malicious_count}")
+        print("Generate report complete.")
+    else:
+        print("No samples")
+
 
 
 # --------------------------------- FLOW'S INFORMATON CALCULATION FUNCTIONS -----------------------------------------------------
@@ -184,20 +225,124 @@ def calculate_flow_duration(flow):
 
 def find_service(flow):
     well_known_ports = {
-        20: 'ftp',
-        21: 'ftp',
-        25: 'smtp',
-        80: 'http',
-        443: 'https',
-        134: 'IMAP',
-        53: 'DNS',
-    }
+    20: 'ftp',
+    21: 'ftp',
+    22: 'ssh',
+    23: 'telnet',
+    25: 'smtp',
+    53: 'dns',
+    67: 'dhcp',
+    68: 'dhcp',
+    69: 'tftp',
+    80: 'http',
+    110: 'pop3',
+    123: 'ntp',
+    137: 'netbios-ns',
+    138: 'netbios-dgm',
+    139: 'netbios-ssn',
+    143: 'imap',
+    161: 'snmp',
+    162: 'snmptrap',
+    179: 'bgp',
+    389: 'ldap',
+    443: 'https',
+    445: 'smb',
+    465: 'smtps',
+    514: 'syslog',
+    515: 'printer',
+    520: 'rip',
+    546: 'dhcpv6-client',
+    547: 'dhcpv6-server',
+    587: 'smtp',
+    631: 'ipp',
+    636: 'ldaps',
+    993: 'imaps',
+    995: 'pop3s',
+    1080: 'socks',
+    1433: 'mssql',
+    1434: 'mssql',
+    1701: 'l2tp',
+    1723: 'pptp',
+    1812: 'radius',
+    1813: 'radius',
+    2049: 'nfs',
+    2082: 'cpanel',
+    2083: 'cpanel',
+    3306: 'mysql',
+    3389: 'rdp',
+    5060: 'sip',
+    5061: 'sips',
+    5432: 'postgresql',
+    5500: 'vnc',
+    5631: 'pcanywhere',
+    5632: 'pcanywhere',
+    5900: 'vnc',
+    5901: 'vnc',
+    5902: 'vnc',
+    5903: 'vnc',
+    5984: 'couchdb',
+    6379: 'redis',
+    7001: 'weblogic',
+    7002: 'weblogic',
+    8000: 'http',
+    8001: 'http',
+    8008: 'http',
+    8080: 'http',
+    8081: 'http',
+    8443: 'https',
+    8888: 'http',
+    9000: 'http',
+    9001: 'http',
+    9042: 'cassandra',
+    9092: 'kafka',
+    9100: 'printer',
+    9200: 'elasticsearch',
+    9300: 'elasticsearch',
+    9418: 'git',
+    9999: 'http',
+    10000: 'webmin',
+    11211: 'memcached',
+    27017: 'mongodb',
+    27018: 'mongodb',
+    27019: 'mongodb',
+    28017: 'mongodb',
+    50000: 'saprouter',
+    50070: 'hadoop',
+    50075: 'hadoop',
+    50090: 'hadoop',
+    61616: 'activemq',
+    8080: 'tomcat',
+    8081: 'tomcat',
+    8082: 'tomcat',
+    8083: 'tomcat',
+    8084: 'tomcat',
+    8085: 'tomcat',
+    8086: 'tomcat',
+    8087: 'tomcat',
+    8088: 'tomcat',
+    8089: 'tomcat',
+    9090: 'websphere',
+    9091: 'websphere',
+    9092: 'websphere',
+    9093: 'websphere',
+    9094: 'websphere',
+    9101: 'bacula',
+    9102: 'bacula',
+    9103: 'bacula',
+    9104: 'bacula',
+    9105: 'bacula',
+    9106: 'bacula',
+    9107: 'bacula',
+    9108: 'bacula',
+    9109: 'bacula',
+    9110: 'bacula'
+}
 
     dport = int(flow['destination_port'])
     if dport in well_known_ports:
         return well_known_ports[dport]
     else:
-        return 'Unknown'
+        return '-'
 
 def find_state(flow):
     # Infer state based on TCP flags
