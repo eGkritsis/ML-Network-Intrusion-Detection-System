@@ -46,17 +46,8 @@ y_test_encoded = y_test.copy()
 y_test_encoded = ordinal_encoder.transform(y_test)
 
 # Create a Random Forest classifier
-rf = RandomForestClassifier(RandomForestClassifier(
-    n_estimators=400,  # Increase the number of trees
-    criterion='gini',  # Use Gini impurity as the criterion
-    max_depth=None,  # Allow trees to grow without maximum depth
-    min_samples_split=2,  # Require at least 2 samples to split a node
-    min_samples_leaf=1,  # Require at least 1 sample at a leaf node
-    max_features='auto',  # Use 'auto' to consider all features for the best split
-    bootstrap=True,  # Use bootstrap samples for training
-    random_state=42  # Set a random seed for reproducibility
-)
-)
+# Train the Random Forest model
+rf = RandomForestClassifier()
 
 # Train the model
 rf.fit(x_train_encoded, y_train_encoded)
