@@ -1,25 +1,6 @@
 import pyshark
 from datetime import datetime
 
-# Empty captured flows list
-captured_packets = []
-
-# Capture packets
-def capture_packets(interface, num_packets):
-    # Create a packet capture object
-    capture = pyshark.LiveCapture(interface=interface)
-
-    # Start capturing packets
-    capture.sniff(packet_count=num_packets)
-
-    # Process captured packets
-    for packet in capture:
-        # Append packet summary to the captured packets list
-        captured_packets.append(packet)
-
-    return captured_packets
-
-
 # Empty captured flows lsit
 captured_flows = []
 

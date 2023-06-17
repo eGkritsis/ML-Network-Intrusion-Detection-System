@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 # Load the dataset and split into features and labels
 dataset = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\UNSW_NB15_training-set.csv')
 X = dataset.drop(['id', 'label', 'attack_cat'], axis=1)
-y = dataset['label']
+y = dataset['attack_cat']
 
 # One-hot encode categorical features
 categorical_features = ['proto', 'service', 'state']
@@ -29,6 +29,10 @@ sorted_importances = importances[sorted_indices]
 
 # Get the names of the features in the original order
 feature_names = X_encoded.columns.values[sorted_indices]
+
+# Print feature importances and sorted feature names
+for name, importance in zip(feature_names, sorted_importances):
+    print(f"{name}: {importance}")
 
 # Plot the feature importances
 plt.figure(figsize=(10, 6))
