@@ -120,7 +120,6 @@ def generate_report_label(predicted_labels):
 # --------------------------------- FLOW'S INFORMATON CALCULATION FUNCTIONS -----------------------------------------------------
 
 def calculate_flag_dist(flow, flag): 
-    # * WORKS - DEN BGAZEI ARNHTIKES MEXRI STIGMHS * 
     # Features {Ack, Syn, Fin, Psh, Rst}FlagDist: 
     # These features represent the distribution of TCP packets 
     # with specific TCP flags set (ACK, SYN, FIN, PSH, RST)
@@ -137,7 +136,7 @@ def calculate_flag_dist(flow, flag):
 
     total_packets = len(flow['packets'])
     flag_count = 0
-
+    
     # Count the occurrences of the flag
     for packet in flow['packets']:
         if 'tcp' in packet:
@@ -146,44 +145,47 @@ def calculate_flag_dist(flow, flag):
                 flags_hex = int(tcp_packet.flags, 16)
                 if flags_hex & flag_mapping[flag]:
                     flag_count += 1
-    
+            
     # Calculate the flag distribution as a percentage
     flag_dist[flag] = flag_count / total_packets if total_packets > 0 else 0.0
 
     return flag_dist[flag]
 
 def calculate_protocol_over_ip(flow, protocol):
+    #Features {TCP,UDP,DNS}OverIP: have been chosen since many attacks exploit specific
+    #characteristics of these protocols. As an example, trojans and other remote access issue
+    #a large number of DNS requests to locate their command and control server, so an high
+    #DNSOverIP ratio may indicate malicious traffic
+
     protocol_count = sum(1 for packet in flow['packets'] if 'ip' in packet and packet.highest_layer == protocol)
     ip_count = sum(1 for packet in flow['packets'] if 'ip' in packet)
     return protocol_count / ip_count if ip_count != 0 else 0
 
 def calculate_max_length(flow):
+    # have been chosen since
+    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
     lengths = [int(packet.length) for packet in flow['packets']]
-    return max(lengths) if lengths else 0
+    return max(lengths) if lengths else 0.0
 
 def calculate_min_length(flow):
+    # have been chosen since
+    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
     lengths = [int(packet.length) for packet in flow['packets']]
-    return min(lengths) if lengths else 0
+    return min(lengths) if lengths else 0.0
 
 def calculate_stddev_length(flow):
-    lengths = []
-    for packet in flow['packets']:
-        if 'length' in packet:
-            length = int(packet['length'])
-            lengths.append(length)
-    if lengths:
+    # have been chosen since
+    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
+    lengths = [len(packet) for packet in flow]
+    if len(lengths) >= 2:
         return np.std(lengths)
     else:
-        return 0.0
+        return float('nan')
 
 def calculate_avg_length(flow):
-    lengths = []
-    for packet in flow['packets']:
-        if 'length' in packet:
-            length = int(packet['length'])
-            lengths.append(length)
+    lengths = [len(packet) for packet in flow]
     if lengths:
-        return np.mean(lengths)
+        return sum(lengths) / len(lengths)
     else:
         return 0.0
 
@@ -196,11 +198,14 @@ def calculate_max_iat(flow):
             iat = abs(float(flow['packets'][i]['time']) - float(flow['packets'][i-1]['time']))
             max_iat = max(max_iat, iat)
 
+    if max_iat == 0.0:
+        return 0.0
+
     return max_iat
 
 def calculate_min_iat(flow):
     if len(flow['packets']) <= 1:
-        return 0
+        return 0.0
 
     iats = []
     for i in range(1, len(flow['packets'])):
@@ -210,16 +215,19 @@ def calculate_min_iat(flow):
         if 'time' in packet and 'time' in previous_packet:
             iat = float(packet['time']) - float(previous_packet['time'])
             iats.append(iat)
+
+    if len(iats) < 2:
+        return 0.0
 
     if iats:
         min_iat = min(iats)
         return min_iat
     else:
-        return 0
+        return 0.0
 
 def calculate_avg_iat(flow):
     if len(flow['packets']) <= 1:
-        return 0
+        return 0.0
 
     iats = []
     for i in range(1, len(flow['packets'])):
@@ -230,11 +238,14 @@ def calculate_avg_iat(flow):
             iat = float(packet['time']) - float(previous_packet['time'])
             iats.append(iat)
 
+    if len(iats) < 2:
+        return 0.0
+
     if iats:
         avg_iat = sum(iats) / len(iats)
         return avg_iat
     else:
-        return 0
+        return 0.0
 
 def calculate_avg_win_flow(flow):
     win_sizes = []
