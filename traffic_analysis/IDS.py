@@ -1,10 +1,13 @@
-import pandas as pd
-import joblib
-from datetime import datetime
-import numpy as np
-from sklearn.impute import SimpleImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.preprocessing import PowerTransformer
 from collections import Counter
+from datetime import datetime
+import pandas as pd
+import numpy as np
 import statistics
+import joblib
+import socket
 
 
 # Extract and preprocess the necessary information from each flow of packets
@@ -33,9 +36,9 @@ def extract_flow_info(flow, id):
     flow_info['MinLen'] = calculate_min_length(flow)
     flow_info['StdDevLen'] = calculate_stddev_length(flow)
     flow_info['AvgLen'] = calculate_avg_length(flow)
-    flow_info['MaxIAT'] = calculate_max_iat(flow)
-    flow_info['MinIAT'] = calculate_min_iat(flow)
-    flow_info['AvgIAT'] = calculate_avg_iat(flow)
+    flow_info['MaxIAT'] = calculate_max_iat(flow, timestamps)
+    flow_info['MinIAT'] = calculate_min_iat(flow, timestamps)
+    flow_info['AvgIAT'] = calculate_avg_iat(flow, timestamps)
     flow_info['AvgWinFlow'] = calculate_avg_win_flow(flow)
     flow_info['PktsIOratio'] = calculate_pkts_io_ratio(flow, count_spkts(flow), count_dpkts(flow))
     flow_info['1stPktLen'] = calculate_first_pkt_length(flow)
@@ -49,10 +52,10 @@ def extract_flow_info(flow, id):
     flow_info['FlowLEN'] = calculate_flow_len(flow)
     flow_info['FlowLENrx'] = calculate_flow_len_rx(flow)
     flow_info['repeated_pkts_ratio'] = calculate_repeated_pkts_ratio(flow)
-    flow_info['NumCon'] = calculate_num_conversations(flow)
+    flow_info['NumCon'] = calculate_num_connections(flow)
     flow_info['NumIPdst'] = calculate_num_unique_ipdst(flow)
-    #flow_info['Start_flow'] = calculate_start_flow(flow)
-    #flow_info['DeltaTimeFlow'] = calculate_delta_time_flow(flow)
+    #flow_info['Start_flow'] = calculate_start_flow(timestamps)
+    #flow_info['DeltaTimeFlow'] = calculate_delta_time_flow(timestamps)
     flow_info['HTTPpkts'] = calculate_http_packets(flow)
 
     print(f"id: {id}")
@@ -77,18 +80,23 @@ def supervised_flow_detection(captured_flows, model):
         info = extract_flow_info(flow, n)
         flow_info.append(info)
 
-    # Create an instance of SimpleImputer with a strategy to fill missing values with the mean
-    imputer = SimpleImputer(strategy='mean')
     flow_info_df = pd.DataFrame(flow_info)
-    flow_info_df = imputer.fit_transform(flow_info_df)
-    
+
     # Check if the DataFrame has zero samples
     if flow_info_df.shape[0] == 0:
         # No valid samples
         return None
+    
+    # Apply MICE imputation
+    imputer = IterativeImputer()
+    flow_info_df = imputer.fit_transform(flow_info_df)
+
+    # Apply PowerTransformer scaling
+    scaler = PowerTransformer()
+    scaled_data = scaler.fit_transform(flow_info_df)
 
     # Use the model to predict labels for the preprocessed flows
-    predicted_labels = detect_anomaly(flow_info_df, model)
+    predicted_labels = detect_anomaly(scaled_data, model) 
 
     return predicted_labels
 
@@ -152,91 +160,76 @@ def calculate_flag_dist(flow, flag):
     return flag_dist[flag]
 
 def calculate_protocol_over_ip(flow, protocol):
-    #Features {TCP,UDP,DNS}OverIP: have been chosen since many attacks exploit specific
-    #characteristics of these protocols. As an example, trojans and other remote access issue
-    #a large number of DNS requests to locate their command and control server, so an high
-    #DNSOverIP ratio may indicate malicious traffic
+    # Features {TCP,UDP,DNS}OverIP: have been chosen since many attacks exploit specific
+    # characteristics of these protocols. As an example, trojans and other remote access issue
+    # a large number of DNS requests to locate their command and control server, so an high
+    # DNSOverIP ratio may indicate malicious traffic
 
     protocol_count = sum(1 for packet in flow['packets'] if 'ip' in packet and packet.highest_layer == protocol)
     ip_count = sum(1 for packet in flow['packets'] if 'ip' in packet)
     return protocol_count / ip_count if ip_count != 0 else 0
 
 def calculate_max_length(flow):
-    # have been chosen since
-    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
     lengths = [int(packet.length) for packet in flow['packets']]
-    return max(lengths) if lengths else 0.0
+    return float(max(lengths)) if lengths else 0.0
 
 def calculate_min_length(flow):
-    # have been chosen since
-    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
     lengths = [int(packet.length) for packet in flow['packets']]
-    return min(lengths) if lengths else 0.0
+    return float(min(lengths)) if lengths else 0.0
 
 def calculate_stddev_length(flow):
-    # have been chosen since
-    # packet number, size and inter-arrival times are useful to detect flooding-style attacks
     lengths = [len(packet) for packet in flow]
     if len(lengths) >= 2:
         return np.std(lengths)
     else:
-        return float('nan')
+        return 0.0
 
 def calculate_avg_length(flow):
-    lengths = [len(packet) for packet in flow]
-    if lengths:
-        return sum(lengths) / len(lengths)
+    total_length = 0
+    num_packets = len(flow['packets'])
+
+    for packet in flow['packets']:
+        total_length = total_length + len(packet) 
+    
+    if num_packets > 0:
+        avg_length = total_length / num_packets
     else:
-        return 0.0
+        avg_length = 0.0
+    
+    return avg_length
 
-def calculate_max_iat(flow):
+def calculate_max_iat(flow, timestamps):
     max_iat = 0.0
-    prev_time = None
 
-    for packet in flow['packets']:
-        if 'time' in packet:
-            curr_time = float(packet['time'])
-            if prev_time is not None:
-                iat = abs(curr_time - prev_time)
-                max_iat = max(max_iat, iat)
-            prev_time = curr_time
+    for i in range(1, len(timestamps)):
+        iat = timestamps[i] - timestamps[i-1]
+        max_iat = max(max_iat, iat)
 
-    return max_iat
+    return float(max_iat)
 
-def calculate_min_iat(flow):
-    min_iat = float('inf')
-    prev_time = None
-
-    for packet in flow['packets']:
-        if 'time' in packet:
-            curr_time = float(packet['time'])
-            if prev_time is not None:
-                iat = curr_time - prev_time
-                min_iat = min(min_iat, iat)
-            prev_time = curr_time
-
-    if min_iat == float('inf'):
+def calculate_min_iat(flow, timestamps):
+    if len(timestamps) <= 1:
         return 0.0
 
-    return min_iat
-
-def calculate_avg_iat(flow):
     iats = []
-    prev_time = None
+    for i in range(1, len(timestamps)):
+        iat = timestamps[i] - timestamps[i-1]
+        iats.append(iat)
 
-    for packet in flow['packets']:
-        if 'time' in packet:
-            curr_time = float(packet['time'])
-            if prev_time is not None:
-                iat = curr_time - prev_time
-                iats.append(iat)
-            prev_time = curr_time
+    min_iat = min(iats)
+    return float(min_iat)
 
-    if len(iats) < 2:
+def calculate_avg_iat(flow, timestamps):
+    if len(timestamps) <= 1:
         return 0.0
+
+    iats = []
+    for i in range(1, len(timestamps)):
+        iat = timestamps[i] - timestamps[i-1]
+        iats.append(iat)
 
     avg_iat = sum(iats) / len(iats)
-    return avg_iat
+    return float(avg_iat)
 
 def calculate_avg_win_flow(flow):
     win_sizes = []
@@ -247,31 +240,28 @@ def calculate_avg_win_flow(flow):
         except AttributeError:
             pass
     if len(win_sizes) == 0:
-        return 0
+        return 0.0
     return sum(win_sizes) / len(win_sizes)
 
 def calculate_pkts_io_ratio(flow, spkts, dpkts):
     if spkts == 0 or dpkts == 0:
-        return 0
+        return 0.0
     return spkts / dpkts
 
 def calculate_first_pkt_length(flow):
-    if len(flow['packets']) == 0:
-        return 0
-
-    first_packet = flow['packets'][0]
-    if 'length' in first_packet:
-        return int(first_packet['length'])
+    if flow['packets']:
+        first_packet_len = len(flow['packets'][0])
+        return float(first_packet_len)
     else:
-        return 0
+        return 0.0
 
 def calculate_max_len_rx(flow):
-    max_len_rx = 0
+    max_len_rx = 0.0
     for packet in flow['packets']:
         packet_length = int(packet.length)
         if packet_length > max_len_rx:
             max_len_rx = packet_length
-    return max_len_rx
+    return float(max_len_rx)
 
 def calculate_min_len_rx(flow):
     min_len_rx = float('inf') 
@@ -279,19 +269,19 @@ def calculate_min_len_rx(flow):
         packet_length = int(packet.length)
         if packet_length < min_len_rx:
             min_len_rx = packet_length
-    return min_len_rx
+    return float(min_len_rx)
 
 def calculate_std_dev_len_rx(flow):
     lengths = [len(packet) for packet in flow['packets']]
 
     if len(lengths) < 2:
-        return 0
+        return 0.0
 
     return statistics.stdev(lengths)
 
 def calculate_avg_len_rx(flow):
-    total_length = 0
-    packet_count = 0
+    total_length = 0.0
+    packet_count = 0.0
 
     for packet in flow['packets']:
         packet_length = int(packet.length)
@@ -301,98 +291,119 @@ def calculate_avg_len_rx(flow):
     if packet_count > 0:
         avg_len_rx = total_length / packet_count
     else:
-        avg_len_rx = 0
+        avg_len_rx = 0.0
 
-    return avg_len_rx
+    return float(avg_len_rx)
 
 def calculate_min_iat_rx(flow, timestamps):
     if len(timestamps) <= 1:
-        return 0
+        return 0.0
     iats = [timestamps[i] - timestamps[i-1] for i in range(1, len(timestamps))]
-    return min(iats)
+    return float(min(iats))
 
 def calculate_avg_iat_rx(flow, timestamps):
     if len(timestamps) <= 1:
-        return 0
+        return 0.0
     iats = [timestamps[i] - timestamps[i-1] for i in range(1, len(timestamps))]
-    return statistics.mean(iats)
+    return float(statistics.mean(iats))
 
 def calculate_num_ports(flow):
+    # Logika einai lathos, to kathe flow periexei paketa me idia src kai dst ports kai ips
     unique_ports = set()
 
     for packet in flow['packets']:
-        try:
-            destination_port = int(packet.tcp.dstport)
-            unique_ports.add(destination_port)
-        except AttributeError:
-            # Skip packets without a TCP layer
-            continue
+        if flow['protocol'] == 'TCP' or flow['protocol'] == 'UDP':
+            try:
+                destination_port = int(packet.tcp.dstport)
+                unique_ports.add(destination_port)
+            except AttributeError:
+                # Skip packets without a TCP layer
+                continue
+        else:
+            # Return 'Unavailable' for flows not using TCP or UDP
+            return 0.0
 
     num_ports = len(unique_ports)
-    return num_ports
+    return float(num_ports)
 
 def calculate_flow_len(flow):
     total_length = sum(int(packet.length) for packet in flow['packets'])
-    return total_length
+    return float(total_length)
 
 def calculate_flow_len_rx(flow):
-    total_length = sum(int(packet.length) for packet in flow['packets'] if flow['destination_ip'] == '192.168.1.174') # Change to your own local IP address
-    return total_length
+    total_length = sum(int(packet.length) for packet in flow['packets'] if flow['destination_ip'] == str(get_local_ip()))
+    return float(total_length)
 
 def calculate_repeated_pkts_ratio(flow):
-    packet_count = len(flow['packets'])
-    unique_packets = set(packet.highest_layer for packet in flow['packets'])
-    num_repeated_pkts = packet_count - len(unique_packets)
-    repeated_pkts_ratio = num_repeated_pkts / packet_count if packet_count > 0 else 0.0
-    return repeated_pkts_ratio
-
-def calculate_num_conversations(flow):
-    conversation_ids = set()
+    packet_lengths = {}
     for packet in flow['packets']:
-        src_ip = flow['source_ip']
-        dst_ip = flow['destination_ip']
-        conversation_id = f"{src_ip}-{dst_ip}"
-        conversation_ids.add(conversation_id)
-    num_conversations = len(conversation_ids)
-    return num_conversations
+        length = int(packet.length)
+        if length in packet_lengths:
+            packet_lengths[length] += 1
+        else:
+            packet_lengths[length] = 1
+    
+    max_occurrence = max(packet_lengths.values(), default=0)
+    repeated_pkts_ratio = max_occurrence / len(flow['packets'])
+    return float(repeated_pkts_ratio)
+
+def calculate_num_connections(flow):
+    num_connections = sum(1 for packet in flow['packets'] if 'tcp' in packet and 'SYN' in packet.tcp.flags and 'ACK' in packet.tcp.flags)
+    return float(num_connections)
 
 def calculate_num_unique_ipdst(flow):
-    unique_ipdst = set()
+    # Logika einai lathos, to kathe flow periexei paketa me idia src kai dst ports kai ips
+    unique_ips = set()
     for packet in flow['packets']:
-        dst_ip = flow['destination_ip']
-        unique_ipdst.add(dst_ip)
-    num_unique_ipdst = len(unique_ipdst)
-    return num_unique_ipdst
+        if 'ip' in packet:
+            ip_packet = packet.ip
+            if hasattr(ip_packet, 'src'):
+                src_ip = ip_packet.src
+                unique_ips.add(src_ip)
+    num_unique_ipdst = len(unique_ips)
+    return float(num_unique_ipdst)
 
-def calculate_start_flow(flow):
-    first_packet = flow['packets'][0]
-    start_flow = first_packet.sniff_time
-    return start_flow
+def calculate_start_flow(timestamps):
+    if len(timestamps) == 0:
+        return 0.0
+    start_flow = timestamps[0] % 1
+    return "{:.6f}".format(float(start_flow))
 
-def calculate_delta_time_flow(flow):
-    packets = flow['packets']
-    first_packet_time = packets[0].sniff_time
-    last_packet_time = packets[-1].sniff_time
-    delta_time_flow = last_packet_time - first_packet_time
-    return delta_time_flow.total_seconds()
+def calculate_delta_time_flow(timestamps):
+    if len(timestamps) <= 1:
+        return 0.0
+    delta_time = timestamps[-1] - timestamps[0]
+    return "{:.6f}".format(float(delta_time))
 
 def calculate_http_packets(flow):
-    http_packets = 0
-    for packet in flow['packets']:
-        if 'http' in packet:
-            http_packets += 1
-    return http_packets
+    http_packets = 0.0
+    
+    if flow['destination_port'] in {'80', '443'}:
+        http_packets = len(flow['packets'])
+
+    return float(http_packets)
 
 def count_spkts(flow):
-    spkts = 0
+    spkts = 0.0
     for packet in flow['packets']:
         if 'ip' in packet and packet.ip.src == flow['source_ip']:
             spkts += 1
-    return spkts
+    return float(spkts)
 
 def count_dpkts(flow):
-    dpkts = 0
+    dpkts = 0.0
     for packet in flow['packets']:
         if 'TCP' in packet or 'UDP' in packet:
             dpkts += 1
-    return dpkts
+    return float(dpkts)
+
+def get_local_ip():
+    try:
+        # Create a temporary socket
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        temp_socket.connect(("8.8.8.8", 80))  # Connect to a public IP address
+        local_ip = temp_socket.getsockname()[0]  # Retrieve the local IP address
+        temp_socket.close()  # Close the temporary socket
+        return local_ip
+    except socket.error:
+        return None
