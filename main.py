@@ -6,11 +6,8 @@ def main():
     # 'Ethernet' or 'Wi-Fi'
     interface = 'Wi-fi'  
 
-    # Set the number of packets to capture 
-    num_packets = 300
-
     # Start capturing flows
-    captured_flows = capture_flows(interface, num_packets)
+    captured_flows = capture_flows(interface)
 
     # Model file 
     model_file = r'rf_31_kdd.pkl'
