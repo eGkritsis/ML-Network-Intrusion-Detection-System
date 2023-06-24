@@ -192,60 +192,51 @@ def calculate_avg_length(flow):
 def calculate_max_iat(flow):
     max_iat = 0.0
     prev_time = None
-    
-    for i in range(1, len(flow['packets'])):
-        if 'time' in flow['packets'][i] and 'time' in flow['packets'][i-1]:
-            iat = abs(float(flow['packets'][i]['time']) - float(flow['packets'][i-1]['time']))
-            max_iat = max(max_iat, iat)
 
-    if max_iat == 0.0:
-        return 0.0
+    for packet in flow['packets']:
+        if 'time' in packet:
+            curr_time = float(packet['time'])
+            if prev_time is not None:
+                iat = abs(curr_time - prev_time)
+                max_iat = max(max_iat, iat)
+            prev_time = curr_time
 
     return max_iat
 
 def calculate_min_iat(flow):
-    if len(flow['packets']) <= 1:
+    min_iat = float('inf')
+    prev_time = None
+
+    for packet in flow['packets']:
+        if 'time' in packet:
+            curr_time = float(packet['time'])
+            if prev_time is not None:
+                iat = curr_time - prev_time
+                min_iat = min(min_iat, iat)
+            prev_time = curr_time
+
+    if min_iat == float('inf'):
         return 0.0
 
-    iats = []
-    for i in range(1, len(flow['packets'])):
-        packet = flow['packets'][i]
-        previous_packet = flow['packets'][i-1]
-
-        if 'time' in packet and 'time' in previous_packet:
-            iat = float(packet['time']) - float(previous_packet['time'])
-            iats.append(iat)
-
-    if len(iats) < 2:
-        return 0.0
-
-    if iats:
-        min_iat = min(iats)
-        return min_iat
-    else:
-        return 0.0
+    return min_iat
 
 def calculate_avg_iat(flow):
-    if len(flow['packets']) <= 1:
-        return 0.0
-
     iats = []
-    for i in range(1, len(flow['packets'])):
-        packet = flow['packets'][i]
-        previous_packet = flow['packets'][i-1]
+    prev_time = None
 
-        if 'time' in packet and 'time' in previous_packet:
-            iat = float(packet['time']) - float(previous_packet['time'])
-            iats.append(iat)
+    for packet in flow['packets']:
+        if 'time' in packet:
+            curr_time = float(packet['time'])
+            if prev_time is not None:
+                iat = curr_time - prev_time
+                iats.append(iat)
+            prev_time = curr_time
 
     if len(iats) < 2:
         return 0.0
 
-    if iats:
-        avg_iat = sum(iats) / len(iats)
-        return avg_iat
-    else:
-        return 0.0
+    avg_iat = sum(iats) / len(iats)
+    return avg_iat
 
 def calculate_avg_win_flow(flow):
     win_sizes = []
