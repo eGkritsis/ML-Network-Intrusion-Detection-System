@@ -58,7 +58,7 @@ def capture_flows(interface):
             except AttributeError:
                 continue
     except KeyboardInterrupt:
-        # Stop capturing packets when Ctrol+C is pressed
+        # Stop capturing packets when Ctrl+C is pressed
         capture.close()
 
 
