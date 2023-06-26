@@ -1,13 +1,15 @@
 from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import PowerTransformer
+from sklearn.impute import IterativeImputer
 from collections import Counter
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import statistics
+import requests
 import joblib
 import socket
+
 
 
 # Extract and preprocess the necessary information from each flow of packets
@@ -21,6 +23,7 @@ def extract_flow_info(flow, id):
     flow_extra_info['destination_ip'] = flow['destination_ip']
     flow_extra_info['source_port'] = flow['source_port']
     flow_extra_info['destination_port'] = flow['destination_port']
+    flow_extra_info['Number of packets'] = len(flow['packets'])
 
     
     flow_info = {}
@@ -58,11 +61,31 @@ def extract_flow_info(flow, id):
     #flow_info['DeltaTimeFlow'] = calculate_delta_time_flow(timestamps)
     flow_info['HTTPpkts'] = calculate_http_packets(flow)
 
-    print(f"id: {id}")
-    print(flow_extra_info)
-    print(flow_info)
-    print("----------------------------------------------------------------------------------------------------------------------------------------------------")
+    print(f"Flow: {id}\n")
 
+    print("Flow's basic information:")
+    print(flow_extra_info)
+    print()
+
+    # Check IP reputation
+    if flow_extra_info['destination_ip'] != get_local_ip():
+        reputation = check_ip_reputation(flow_extra_info['destination_ip'])
+        if reputation is not None:
+            print(f"AbuseIPDB Reputation: {reputation}")
+        else:
+            print(f"Failed to retrieve IP reputation from AbuseIPDB")
+    else:
+        reputation = check_ip_reputation(flow_extra_info['source_ip'])
+        if reputation is not None:
+            print(f"AbuseIPDB Reputation: {reputation}")
+        else:
+            print(f"Failed to retrieve IP reputation from AbuseIPDB")
+
+    print()
+    print("Flow's features:")
+    print(flow_info)
+
+    print("----------------------------------------------------------------------------------------------------------------------------------------------------")
     return flow_info
 
 # ------------------------------ SUPERVISED LEARNING -----------------------------------------------------------------------------
@@ -77,7 +100,7 @@ def supervised_flow_detection(captured_flows, model):
     # Extract flow info for each captured flow
     for flow in captured_flows:
         n += 1
-        info = extract_flow_info(flow, n)
+        info= extract_flow_info(flow, n)
         flow_info.append(info)
 
     flow_info_df = pd.DataFrame(flow_info)
@@ -88,15 +111,15 @@ def supervised_flow_detection(captured_flows, model):
         return None
     
     # Apply MICE imputation
-    imputer = IterativeImputer()
-    flow_info_df = imputer.fit_transform(flow_info_df)
+    #imputer = IterativeImputer()
+    #flow_info_df = imputer.fit_transform(flow_info_df)
 
     # Apply PowerTransformer scaling
-    scaler = PowerTransformer()
-    scaled_data = scaler.fit_transform(flow_info_df)
+    #scaler = PowerTransformer()
+    #scaled_data = scaler.fit_transform(flow_info_df)
 
     # Use the model to predict labels for the preprocessed flows
-    predicted_labels = detect_anomaly(scaled_data, model) 
+    predicted_labels = detect_anomaly(flow_info_df, model) 
 
     return predicted_labels
 
@@ -108,6 +131,20 @@ def detect_anomaly(info, model):
 def load_model(model_file):
     model = joblib.load(model_file)
     return model
+
+def check_ip_reputation(ip_address):
+    api_key = "f75537f9c4f2845c16d221d5e3ddd1f6fdf86145081538a303bbda26e02aef0018877b9f4e7a5984"
+    url = f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip_address}&maxAgeInDays=30"
+    headers = {
+        "Key": api_key,
+        "Accept": "application/json"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        return None
 
 def generate_report_label(predicted_labels):
     # Generate report based on the predicted labels
@@ -167,7 +204,7 @@ def calculate_protocol_over_ip(flow, protocol):
 
     protocol_count = sum(1 for packet in flow['packets'] if 'ip' in packet and packet.highest_layer == protocol)
     ip_count = sum(1 for packet in flow['packets'] if 'ip' in packet)
-    return protocol_count / ip_count if ip_count != 0 else 0
+    return protocol_count / ip_count if ip_count != 0 else 0.0
 
 def calculate_max_length(flow):
     lengths = [int(packet.length) for packet in flow['packets']]
