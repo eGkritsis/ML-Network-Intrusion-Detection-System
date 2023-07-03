@@ -1,6 +1,6 @@
 from capture.capture_traffic import capture_flows
 from traffic_analysis.IDS import load_model, supervised_flow_detection, generate_report_attack_cat, unsupervised_flow_detection
-
+import socket
 
 def main():
     # Set the network interface for packet capturing 
@@ -31,6 +31,16 @@ def main():
     # UNSUPERVISED LEARNING
     unsupervised_flow_detection(captured_flows)
 
+def get_local_ip():
+    try:
+        # Create a temporary socket
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        temp_socket.connect(("8.8.8.8", 80))  # Connect to a public IP address
+        local_ip = temp_socket.getsockname()[0]  # Retrieve the local IP address
+        temp_socket.close()  # Close the temporary socket
+        return local_ip
+    except socket.error:
+        return None
 
 # Entry point of the packet capture
 if __name__ == '__main__':
