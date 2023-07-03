@@ -77,46 +77,6 @@ print(report)
 # Save the trained classifier to a pickle file
 joblib.dump(rf, 'rf_attack_cat_mapped.pkl')
 
-# Check feature importances
-feature_importances = rf.feature_importances_
-
-# Create a DataFrame to display the feature importances
-importance_df = pd.DataFrame({'Feature': x_train.columns, 'Importance': feature_importances})
-
-# Sort the DataFrame by importance in descending order
-importance_df = importance_df.sort_values(by='Importance', ascending=False)
-
-# Display the feature importances
-print(importance_df)
-
-# Value counts for 'proto'
-proto_counts = train_set['proto'].value_counts().head(100).to_dict()
-print("proto")
-for key, value in proto_counts.items():
-    feature_name = mapping_dict['proto'][key]
-    print(f"{feature_name}: {value}")
-
-# Value counts for 'service'
-service_counts = train_set['service'].value_counts().head(100).to_dict()
-print("service")
-for key, value in service_counts.items():
-    feature_name = mapping_dict['service'][key]
-    print(f"{feature_name}: {value}")
-
-# Value counts for 'state'
-state_counts = train_set['state'].value_counts().head(100).to_dict()
-print("state")
-for key, value in state_counts.items():
-    feature_name = mapping_dict['state'][key]
-    print(f"{feature_name}: {value}")
-
-# Value counts for 'attack_cat'
-attack_cat_counts = train_set['attack_cat'].value_counts().to_dict()
-print("Attack category")
-# Print the attack categories and their counts
-for attack_cat, count in attack_cat_counts.items():
-    print(f"{attack_cat}: {count}")
-
 
 '''
 precision    recall  f1-score   support
