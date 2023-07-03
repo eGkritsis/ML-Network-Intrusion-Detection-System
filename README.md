@@ -1,4 +1,4 @@
-# Machine Learning Network Intrusion Detection System (NIDS) 
+# ML-Network-Intrusion-Detection-System 
 Machine Learning-based IDS: An implementation of an Intrusion Detection System (IDS) using the Random Forest model with 'mta-kdd-19' and 'unsw_nb15' datasets to classify network traffic, detect malicious activities, and predict attack categories.
 
 ## mta-kdd-19 Branch
