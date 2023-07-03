@@ -1,5 +1,5 @@
 # ML-Network-Intrusion-Detection-System 
-Machine Learning-based IDS: An implementation of an Intrusion Detection System (IDS) using the Random Forest model with 'mta-kdd-19' and 'unsw_nb15' datasets to classify network traffic, detect malicious activities, and predict attack categories.
+Machine Learning-based IDS for network traffic classification and attack detection.
 
 ## mta-kdd-19 Branch
 The mta-kdd-19 branch of this project focuses on building a Network Intrusion Detection System (NIDS) using the mta-kdd-19 dataset. It is designed to classify network traffic as either malicious or normal, providing insights into potential security threats in a network environment. This branch includes various functionalities and capabilities, as described below.
