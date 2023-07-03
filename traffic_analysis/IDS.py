@@ -166,50 +166,6 @@ def generate_report_attack_cat(predicted_attack_categories):
     else:
         print("No samples")
 
-def generate_report_label_attack_cat(predicted_labels):
-    if predicted_labels is not None:
-
-        attack_categories = {
-            0: "Analysis",
-            1: "Backdoor",
-            2: "DoS",
-            3: "Exploits",
-            4: "Fuzzers",
-            5: "Generic",
-            6: "Normal",
-            7: "Reconnaissance",
-            8: "Shellcode",
-            9: "Worms"
-        }
-
-        print("Flow Report:")
-        print("-----------------------")
-
-        normal_count = 0
-        malicious_count = 0
-
-        for i, labels in enumerate(predicted_labels):
-            label = labels[0]
-            attack_cat = labels[1]
-            print(f"Flow {i+1}:")
-            print(f" Label: {label}")
-            print(f" Attack Category: {attack_categories[attack_cat]}")
-            print("------------------------")
-
-            if label == 0:
-                normal_count += 1
-            elif label == 1 and attack_cat == 6:
-                normal_count += 1
-            elif label == 1 and attack_cat != 6:
-                malicious_count += 1
-
-        print("------------------------")
-
-        print(f"Number of normal flows: {normal_count}")
-        print(f"Number of malicious flows: {malicious_count}")
-        print("Generate report complete.")
-    else:
-        print("No samples")
 
 # ----------------------------- UNSUPERVISED LEARNING --------------------------------------------------------------------------  
   
