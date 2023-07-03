@@ -19,32 +19,6 @@ def extract_flow_info(flow, id):
     flow_extra_info['source_port'] = flow['source_port']
     flow_extra_info['destination_port'] = flow['destination_port']
 
-    '''
-    spkts = count_spkts(flow)
-    dpkts = count_dpkts(flow)
-    flow_info = {}
-    flow_info['dur'] = calculate_flow_duration(flow)
-    flow_info['proto'] = flow['protocol']
-    flow_info['service'] = find_service(flow)
-    flow_info['state'] = find_state(flow)
-    flow_info['dpkts'] = count_dpkts(flow)
-    flow_info['sbytes'] = calculate_sbytes(flow)
-    flow_info['rate'] = flow_info['sbytes'] / flow_info['dur'] if flow_info['dur'] != 0 else 0
-    flow_info['sttl'] = calculate_sstl(flow)
-    flow_info['sload'] = (flow_info['sbytes'] * 8) / flow_info['dur'] if flow_info['dur'] != 0 else 0
-    flow_info['dinpkt'] = flow_info['dur'] / dpkts if dpkts != 0 else 0
-    flow_info['sjit'] = calculate_jitter(timestamps, spkts)
-    flow_info['tcprtt'] = calculate_tcprtt(flow, timestamps)
-    flow_info['synack'] = calculate_synack(flow, timestamps)
-    flow_info['smean'] = calculate_smean(flow)
-    flow_info['ct_srv_src'] = sum(1 for packet in flow['packets'] if 'tcp' in packet and packet.ip.src == flow['source_ip'])
-    flow_info['ct_state_ttl'] = sum(1 for packet in flow['packets'] if 'ip' in packet and int(packet.ip.ttl) <= 32 and 'tcp' in packet)
-    flow_info['ct_src_dport_ltm'] = calculate_cs_src_dport_ltm(flow, flow_extra_info['source_ip'], flow_extra_info['destination_port'])
-    flow_info['ct_dst_src_ltm'] = calculate_ct_dst_src_ltm(flow, flow_extra_info['destination_ip'], flow_extra_info['source_ip'])
-    flow_info['ct_dst_sport_ltm'] = calculate_ct_dst_sport_ltm(flow, flow_extra_info['destination_ip'], flow_extra_info['source_port'])
-    flow_info['ct_srv_dst'] = len(set(packet.tcp.dstport for packet in flow['packets'] if 'tcp' in packet))
-    '''
-
     flow_info = {}
     flow_info['dur'] = calculate_flow_duration(flow)
     flow_info['proto'] = flow['protocol']

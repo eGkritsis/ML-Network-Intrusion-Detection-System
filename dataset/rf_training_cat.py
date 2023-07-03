@@ -5,23 +5,9 @@ from sklearn.metrics import classification_report
 import joblib
 
 # Load the training and test datasets
-train_set = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\UNSW_NB15_training-set.csv')
-test_set = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\UNSW_NB15_testing-set.csv')
+train_set = pd.read_csv(r'..\Network-Traffic-Analyzer\dataset\UNSW_NB15_training-set.csv')
+test_set = pd.read_csv(r'..\Network-Traffic-Analyzer\dataset\UNSW_NB15_testing-set.csv')
 
-'''
-# Select 20 features based on information gain & importance
-selected_features = [
-    "dur", "proto", "service", "state", "dpkts", "sbytes", 
-    "rate", "sttl", "sload", "dinpkt", "sjit", "tcprtt", "synack", 
-    "smean", "ct_srv_src", "ct_state_ttl",  "ct_src_dport_ltm", 
-    "ct_dst_src_ltm", "ct_dst_sport_ltm", "ct_srv_dst"
-]
-
-# Drop the non-selected features from the training and test sets
-train_set = train_set[selected_features + ['attack_cat']]
-test_set = test_set[selected_features + ['attack_cat']]
-
-'''
 # Drop the "id" and "attack_cat" column from the training dataset
 train_set = train_set.drop(["id", "label"], axis=1)
 
@@ -91,7 +77,6 @@ print(report)
 # Save the trained classifier to a pickle file
 joblib.dump(rf, 'rf_attack_cat_mapped.pkl')
 
-'''
 # Check feature importances
 feature_importances = rf.feature_importances_
 
@@ -131,7 +116,8 @@ print("Attack category")
 # Print the attack categories and their counts
 for attack_cat, count in attack_cat_counts.items():
     print(f"{attack_cat}: {count}")
-'''
+
+
 '''
 precision    recall  f1-score   support
 

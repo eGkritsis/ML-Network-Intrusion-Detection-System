@@ -25,13 +25,3 @@ plt.xticks(range(len(correlation_matrix.columns)), correlation_matrix.columns, r
 plt.yticks(range(len(correlation_matrix.columns)), correlation_matrix.columns)
 plt.title('Data Correlation')
 plt.show()
-
-''' 
-spkts and dpkts (correlation coefficient: 0.97)
-sbytes and dbytes (correlation coefficient: 0.99)
-sloss and spkts (correlation coefficient: 0.97)
-dloss and dpkts (correlation coefficient: 0.98)
-sload and dload (correlation coefficient: -0.92)
-stcpb and swin (correlation coefficient: 0.75)
-dtcpb and dwin (correlation coefficient: 0.77)
-'''

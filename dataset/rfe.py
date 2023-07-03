@@ -45,7 +45,7 @@ y_test = test_set["attack_cat"]
 rf = RandomForestClassifier()
 
 # Create the RFE object with the random forest classifier and specify the number of features to select
-rfe = RFE(estimator=rf, n_features_to_select=20)
+rfe = RFE(estimator=rf, n_features_to_select=30)
 
 # Fit the RFE object to the training data
 rfe.fit(x_train, y_train)

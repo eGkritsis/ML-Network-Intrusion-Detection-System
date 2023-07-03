@@ -31,14 +31,8 @@ def main():
     # Detect malicious traffic
     predicted_labels = supervised_flow_detection(captured_flows, model)
 
-    # Generate report (Target = label)
-    #generate_report_label(predicted_labels)
-
     # Generate report (Target = attack_cat)
     generate_report_attack_cat(predicted_labels)
-
-    # Generate report (Target = label + attack_cat)
-    #generate_report_label_attack_cat(predicted_labels)
 
     # UNSUPERVISED LEARNING
     unsupervised_flow_detection(captured_flows)
