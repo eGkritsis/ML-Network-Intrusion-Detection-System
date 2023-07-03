@@ -3,12 +3,12 @@ from datetime import datetime
 
 
 # Capture flows
-def capture_flows(interface):
+def capture_flows(interface, filter):
 
     # Empty captured flows lsit
     captured_flows = []
 
-    capture = pyshark.LiveCapture(interface=interface)
+    capture = pyshark.LiveCapture(interface=interface, display_filter=filter)
 
     try:
         # Start capturing packets
