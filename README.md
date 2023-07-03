@@ -63,13 +63,5 @@ To run the NIDS project using the mta-kdd-19 branch, follow these steps:
 - This script will capture network traffic using the `capture_traffic.py` script and analyze it using the trained model.
 - Press Ctrl+C to stop the capture and wait for the results.
 
-### Branch Structure
-
-- `dataset/`: Contains the `mta-kdd-19` dataset files, 
-- `models/`: Includes the trained Random Forest model.
-- `utils/`: Contains helper functions for data preprocessing, feature extraction, and IP reputation checkup.
-- `main.py`: Entry point of the application.
-
-
 
 
