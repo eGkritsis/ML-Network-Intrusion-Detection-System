@@ -5,13 +5,15 @@ import joblib
 from sklearn.metrics import classification_report
 
 # Load the legitimate traffic dataset
-legitimate_dataset = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\MTA-KDD-19-master\datasetLegitimate33features.csv')
+legitimate_dataset = pd.read_csv(r'..\Network-Traffic-Analyzer\dataset\MTA-KDD-19-master\datasetLegitimate33features.csv')
 
 # Load the malware traffic dataset
-malware_dataset = pd.read_csv(r'D:\AUEB\Projects\Network-Traffic-Analyzer\dataset\MTA-KDD-19-master\datasetMalware33features.csv')
+malware_dataset = pd.read_csv(r'..\Network-Traffic-Analyzer\dataset\MTA-KDD-19-master\datasetMalware33features.csv')
 
 # Merge the datasets
 dataset = pd.concat([legitimate_dataset, malware_dataset])
+
+dataset = dataset.drop(['Start_flow', 'DeltaTimeFlow'], axis=1)
 
 # Separate features and target variable
 X = dataset.drop('label', axis=1)
@@ -34,7 +36,7 @@ report = classification_report(y_test, predictions)
 print(report)
 
 # Save the trained model
-#joblib.dump(rf, 'rf_kdd.pkl')
+joblib.dump(rf, 'rf_kdd.pkl')
 
 
 ''' 
@@ -57,6 +59,6 @@ FEATURES:
        'AvgWinFlow', 'PktsIOratio', '1stPktLen', 'MaxLenrx', 'MinLenrx',
        'StdDevLenrx', 'AvgLenrx', 'MinIATrx', 'AvgIATrx', 'NumPorts',
        'FlowLEN', 'FlowLENrx', 'repeated_pkts_ratio', 'NumCon', 'NumIPdst',
-       'Start_flow', 'DeltaTimeFlow', 'HTTPpkts'
+       'HTTPpkts'
 
 '''
