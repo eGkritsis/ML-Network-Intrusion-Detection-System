@@ -80,7 +80,7 @@ The `unsw_nb15` branch uses the `unsw_nb15` dataset for network traffic classifi
 
 Here are some screenshots of the results obtained:
 
-![Screenshot 1](screenshots/cmd.png)
-![Screenshot 2](screenshots/report.png)
+![Screenshot 1](screenshots/flows.png)
+![Screenshot 2](screenshots/report_labels.png)
 ![Screenshot 3](screenshots/report_categories.png)
 ![Screenshot 4](screenshots/report_anomalies.png)
