@@ -1,3 +1,5 @@
+import pyshark
+
 # Capture flows
 def capture_flows(interface, filter):
 

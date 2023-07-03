@@ -74,11 +74,6 @@ def extract_flow_info(flow, id):
     state_encoder = LabelEncoder()
     flow_info['state'] = state_encoder.fit_transform([flow_info['state']])[0]
 
-    #print(f"id: {id}")
-    #print(flow_extra_info)
-    #print(flow_info)
-    #print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------")
-
     return flow_info
 
 
