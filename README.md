@@ -1,4 +1,6 @@
-# Machine Learning Network Intrusion Detection System (NIDS) - mta-kdd-19 Branch
+# Machine Learning Network Intrusion Detection System (NIDS) 
+
+## mta-kdd-19 Branch
 
 The mta-kdd-19 branch of this project focuses on building a Network Intrusion Detection System (NIDS) using the mta-kdd-19 dataset. It is designed to classify network traffic as either malicious or normal, providing insights into potential security threats in a network environment. This branch includes various functionalities and capabilities, as described below.
 
@@ -64,4 +66,21 @@ To run the NIDS project using the mta-kdd-19 branch, follow these steps:
 - Press Ctrl+C to stop the capture and wait for the results.
 
 
+## unsw_nb15 Branch
 
+The `unsw_nb15` branch uses the `unsw_nb15` dataset for network traffic classification. It extends the functionalities of the `mta-kdd-19` branch by predicting the attack category of malicious flows and includes an unsupervised learning approach using the Isolation Forest algorithm.
+
+### Additional Features
+
+- Multi-category Classification: Predicts the attack category of each malicious flow.
+- Isolation Forest: Implements an unsupervised learning method for anomaly detection.
+- Visualization: Provides visualizations and plots for better understanding of the data.
+
+## Screenshots
+
+Here are some screenshots of the results obtained:
+
+![Screenshot 1](screenshots/flows.png)
+![Screenshot 2](screenshots/report_labels.png)
+![Screenshot 3](screenshots/report_categories.png)
+![Screenshot 4](screenshots/report_anomalies.png)
