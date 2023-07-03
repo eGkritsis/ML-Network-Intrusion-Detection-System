@@ -1,9 +1,11 @@
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.preprocessing import PowerTransformer
 from sklearn.impute import IterativeImputer
+from sklearn.impute import SimpleImputer
 from collections import Counter
 from datetime import datetime
 import pandas as pd
+import configparser
 import numpy as np
 import statistics
 import requests
@@ -67,6 +69,7 @@ def extract_flow_info(flow, id):
     print(flow_extra_info)
     print()
 
+    
     # Check IP reputation
     if flow_extra_info['destination_ip'] != get_local_ip():
         reputation = check_ip_reputation(flow_extra_info['destination_ip'])
@@ -80,6 +83,7 @@ def extract_flow_info(flow, id):
             print(f"AbuseIPDB Reputation: {reputation}")
         else:
             print(f"Failed to retrieve IP reputation from AbuseIPDB")
+
 
     print()
     print("Flow's features:")
@@ -111,15 +115,15 @@ def supervised_flow_detection(captured_flows, model):
         return None
     
     # Apply MICE imputation
-    #imputer = IterativeImputer()
-    #flow_info_df = imputer.fit_transform(flow_info_df)
+    imputer = IterativeImputer()
+    flow_info_df = imputer.fit_transform(flow_info_df)
 
     # Apply PowerTransformer scaling
-    #scaler = PowerTransformer()
-    #scaled_data = scaler.fit_transform(flow_info_df)
+    scaler = PowerTransformer()
+    scaled_data = scaler.fit_transform(flow_info_df)
 
     # Use the model to predict labels for the preprocessed flows
-    predicted_labels = detect_anomaly(flow_info_df, model) 
+    predicted_labels = detect_anomaly(scaled_data, model) 
 
     return predicted_labels
 
@@ -133,7 +137,7 @@ def load_model(model_file):
     return model
 
 def check_ip_reputation(ip_address):
-    api_key = "f75537f9c4f2845c16d221d5e3ddd1f6fdf86145081538a303bbda26e02aef0018877b9f4e7a5984"
+    api_key = get_api_key()
     url = f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip_address}&maxAgeInDays=30"
     headers = {
         "Key": api_key,
@@ -146,10 +150,20 @@ def check_ip_reputation(ip_address):
     else:
         return None
 
+def get_api_key():
+    config = configparser.ConfigParser()
+    config.read(r'..\Network-Traffic-Analyzer\traffic_analysis\config.ini')
+    api_key = config.get('API', 'Key')
+    return api_key
+
 def generate_report_label(predicted_labels):
     # Generate report based on the predicted labels
     normal_count = np.count_nonzero(predicted_labels == 0)
     malicious_count = np.count_nonzero(predicted_labels == 1)
+
+    if predicted_labels is None:
+        print("No predicted labels available.")
+        return
 
     print()
     print("Flow Report:")
@@ -180,7 +194,7 @@ def calculate_flag_dist(flow, flag):
     flag_dist = {}
 
     total_packets = len(flow['packets'])
-    flag_count = 0
+    flag_count = 0.0
     
     # Count the occurrences of the flag
     for packet in flow['packets']:
@@ -345,7 +359,6 @@ def calculate_avg_iat_rx(flow, timestamps):
     return float(statistics.mean(iats))
 
 def calculate_num_ports(flow):
-    # Logika einai lathos, to kathe flow periexei paketa me idia src kai dst ports kai ips
     unique_ports = set()
 
     for packet in flow['packets']:
@@ -357,7 +370,7 @@ def calculate_num_ports(flow):
                 # Skip packets without a TCP layer
                 continue
         else:
-            # Return 'Unavailable' for flows not using TCP or UDP
+            # Return 0.0 for flows not using TCP or UDP
             return 0.0
 
     num_ports = len(unique_ports)
@@ -389,7 +402,6 @@ def calculate_num_connections(flow):
     return float(num_connections)
 
 def calculate_num_unique_ipdst(flow):
-    # Logika einai lathos, to kathe flow periexei paketa me idia src kai dst ports kai ips
     unique_ips = set()
     for packet in flow['packets']:
         if 'ip' in packet:
